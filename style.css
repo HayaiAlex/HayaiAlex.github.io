@@ -5,3 +5,7 @@ html, body {
 canvas {
   display: block;
 }
+
+.right {
+  right: 600px;
+}
