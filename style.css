@@ -6,6 +6,14 @@ canvas {
   display: block;
 }
 
-.right {
-  right: 600px;
+h2 {
+  text-align: center;
+}
+
+h3 {
+  text-align: center;
+}
+
+.creations{
+  text-align: center;
 }
