@@ -11,6 +11,11 @@ var warpSketch = function(p) {
 
 	p.draw = function() {
 		speed = p.map(p.mouseX, 0, p.width, 0, 50);
+		if (speed < 0)
+			speed = 0;
+		else if (speed > 50)
+			speed = 50;
+			
 		p.background(0);
 		p.translate(p.width/2, p.height/2);
 		stars.forEach(function(s) {
