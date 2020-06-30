@@ -1,6 +1,6 @@
 html, body {
   margin: 0;
-  padding: 0;
+  height: 100vh;
 }
 canvas {
   display: block;
@@ -16,4 +16,11 @@ h3 {
 
 .creations{
   text-align: center;
+}
+
+.top{
+  position: absolute;
+  top: 1em;
+  left: 2em;
+  font-weight: bold;
 }
