@@ -24,3 +24,17 @@ h3 {
   left: 2em;
   font-weight: bold;
 }
+
+.timer{
+  position: absolute;
+  top: 1em;
+  right: 2em;
+  font-weight: bold;
+}
+
+.bottom{
+  position: absolute;
+  bottom: 1em;
+  left: 2em;
+  font-weight: bold;
+}
