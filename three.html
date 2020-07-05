@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="en"><head>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/102/three.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/2.1.2/TweenMax.min.js"></script>
-    
+    <script src="shape.js"></script>
     <link rel="stylesheet" type="text/css" href="style.css">
     <meta charset="utf-8">
 
@@ -10,6 +10,8 @@
   <body>
 
     <a class="top" id="myLink" href="index.html">Home</a>
+
+    <p class="top" id="timer">60</p>
     <script>
         // for some reason href in the <a> tag doesn't work so this is a temp fix
         document.getElementById("myLink").addEventListener('click', () => {
@@ -37,52 +39,172 @@
         var raycaster = new THREE.Raycaster();
         var mouse = new THREE.Vector2();
 
-        // Body
-
-        var geometry = new THREE.CylinderGeometry( 5, 5, 20, 32 );
-        var material = new THREE.MeshStandardMaterial( {color: 0xFF00FF, metalness: 0});
-        var cylinder = new THREE.Mesh( geometry, material );
-        scene.add(cylinder);
-
-
         var light = new THREE.PointLight(0xFFFFFF, 1, 500);
         light.position.set(10, 0, 25);
         scene.add(light);
 
-
         var render = function() {
             requestAnimationFrame(render);
+            
+            onTick();
 
-            camera.rotation.z += 0.01
             renderer.render(scene, camera);
         }
-        render();
 
-        function onClick(event) {
-            event.preventDefault();
-
-
+        function mouseMove(event) {
             mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
             mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
 
-            raycaster.setFromCamera(mouse, camera);
+            updateCursors(mouse.x, mouse.y);
 
+            raycaster.setFromCamera(mouse, camera);
+            
             var intersects = raycaster.intersectObjects(scene.children, true);
             for (var i = 0; i < intersects.length; i++) {
-                intersects[i].object.material.color.set(0xaaaa00);
-                scale(intersects[i].object)
+                objColour = intersects[i].object.material.color
+                // if mesh is green == cursor so don't remove
+                if (!(objColour.r == 0 && objColour.g == 1 && objColour.b == 0))
+                    if (intersects[i].object.geometry.type == currentCursor.geometry.type)
+                        onHover(intersects[i].object)
             }
         }
 
-        function scale(mesh) {
+        document.addEventListener("keydown", onDocumentKeyDown, false);
+        function onDocumentKeyDown(event) {
+            var keyCode = event.which;
+            // 1
+            if (keyCode == 49) {
+                currentCursor = cursorSphere;
+                cursorSphere.visible = true;
+                cursorBox.visible = false;
+            // 2
+            } else if (keyCode == 50) {
+                currentCursor = cursorBox;
+                cursorSphere.visible = false;
+                cursorBox.visible = true;
+            }
+        };
+
+        function updateCursors(x, y) {
+            var vector = new THREE.Vector3(mouse.x, mouse.y, 1);
+            vector.unproject( camera );
+            var dir = vector.sub( camera.position ).normalize();
+            var distance = - camera.position.z / dir.z;
+            var pos = camera.position.clone().add( dir.multiplyScalar( distance ) );
+
+            cursorSphere.position.set(pos.x, pos.y, 1);
+            cursorBox.position.set(pos.x, pos.y , 1);
+        }
+
+        function checkForGarbage() {
+            for (var i=0;i<shapes.length;i++) {
+                if (shapes[i].newShape.scale.x == 0) {
+                    scene.remove(shapes[i].newShape);
+                }
+            }
+        }
+
+        window.addEventListener('mousemove', mouseMove)
+
+
+
+
+
+
+
+
+
+
+
+
+        // Game
+        
+        // Cursors
+        var cursorMaterial = new THREE.MeshStandardMaterial({color: 0x00FF00, metalness: 0});
+        var cursorSphereGeometry = new THREE.SphereGeometry(10, 32, 32);
+        var cursorBoxGeometry = new THREE.BoxGeometry(16, 16, 16);
+        var cursorSphere = new THREE.Mesh(cursorSphereGeometry, cursorMaterial)
+        var cursorBox = new THREE.Mesh(cursorBoxGeometry, cursorMaterial)
+        scene.add(cursorSphere)
+        scene.add(cursorBox)
+        console.log(cursorBox)
+
+
+        cursorBox.visible = false
+        var currentCursor = cursorSphere
+
+
+
+        var shapes = []
+        
+        function pickLocation(attempt) {
+            var attempt = (typeof attempt !== 'undefined') ? attempt : 1;
+            var x = Math.random() * 200 - 100;
+            var y = Math.random() * 140 - 70;
+            for (i=0;i<shapes.length;i++) {
+                if (Math.abs(shapes[i].newShape.position.x - x) < 16 || Math.abs(x - shapes[i].newShape.position.x) < 16) {
+                    console.log(shapes[i].newShape.position.x - x, Math.abs(x - shapes[i].newShape.position.x))
+                    if (Math.abs(shapes[i].newShape.position.y - y) < 16 || Math.abs(y - shapes[i].newShape.position.y) < 16)
+                        if (attempt > 50) {
+                            console.log("Hit attempt limit")
+                            return [x,y]
+                        }
+                        else
+                            // console.log("xs",shapes[i].newShape.position.x, x)
+                            // console.log("ys",shapes[i].newShape.position.y, y)
+                            return pickLocation(attempt + 1)
+                }
+            }
+            return [x,y]
+        }
+
+        function pickColour() {
+            var colours = [0xFF00FF, 0x00FFFF, 0xFF0000, 0x00FF00, 0xFFFF00]
+            return colours[Math.floor(Math.random() * Math.floor(colours.length))];
+        }
+
+        for (var shapeCount=0;shapeCount<10;shapeCount++) {
+            console.log("shape counter",shapeCount)
+            var shapeProbability = Math.random();
+            var shape
+            if (shapeProbability<0.5)
+                shape = "Sphere";
+            else
+                shape = "Box";
+
+            var position = pickLocation();
+            colour = pickColour();
+            newShape = new gameShape(shape, position , colour);
+            shapes.push(newShape);
+        }
+        
+        function onTick() {
+            checkForGarbage();
+            updateClock();
+
+
+        }
+
+        
+
+        function onHover(mesh) {
             tl = new TimelineMax({paused: false});
-            newX = mesh.scale.x == 1 ? 2 : mesh.scale.x * 2
-            tl.to(mesh.scale, 1, {x: newX, ease: Expo.easeOut})
+            tl.to(mesh.scale, 1, {x: 0, ease: Expo.none})
+            tl.to(mesh.scale, 1, {y: 0, ease: Expo.none, delay: -1})
+            tl.to(mesh.scale, 1, {z: 0, ease: Expo.none, delay: -1})
+        }
+
+        // Clock stuff
+        var startTime = new Date().getTime();
+        var startCount = 60
+        function updateClock() {
+            var currentTime = new Date().getTime();
+            newNumber = startCount - Math.floor((currentTime - startTime)/1000);
+            document.getElementById("timer").textContent =  newNumber;
         }
 
 
-        window.addEventListener('click', onClick)
-
+        render();
     </script>
     
 
